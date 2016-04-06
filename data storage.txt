@@ -1,0 +1,30 @@
+;Here is some info on how to create datatables.
+;Basically, you just declare a table and make a pointer to the first value of the table.
+;Then add however many points you want (181 in case of the ResetMem)
+;The ResetMem loops just goes and stores 0's in all the tables' addresses. 
+;To store values, you just keep your values in a temporary values, and ISTORE them into the addresses of the datatables.
+
+
+ResetMem: ; loop to initialize the table to 0's
+	LOADI  DataTable   ; get the table address
+	STORE  pointer     ; set the pointer to start of table
+	ADDI   180         ; find end of table (181 entries in this case)
+	STORE  Temp        ; save end for later
+ResetMemLoop:
+	LOADI  0
+	ISTORE pointer     ; store 0 in to table at pointer address
+	LOAD   pointer
+	XOR    Temp        ; check against table end address
+	JZERO  ResetMemEnd ; if that was end, exit loop
+	LOAD   pointer
+	ADDI   1           ; otherwise...
+	STORE  pointer     ; increment pointer
+	JUMP   ResetMemLoop ; do it again
+ResetMemEnd:
+
+; At the end, throw these in to declare the pointer and table.
+
+pointer:  DW 0
+; This MUST be at the end of memory, or saving in to it will overwrite
+; everything after it.
+DataTable: DW 0
