@@ -83,10 +83,6 @@ Main: ; "Real" program starts here.
 	JUMP   Example1
 	
 Example1:
-; THIS IS ONLY TO SHOW HOW TO USE SOME OF THE PROVIDED SUBROUTINES.  It is not
-; intended to solve any of your project.  However, it IS tailored to this semester,
-; so if you find pieces of this example useful, you are welcome to build on them.
-
 ; This example moves the robot forward six feet while pinging the left and right
 ; sensors.  The FIRST time each sensor detects an object within 2ft, the robot will
 ; send its OWN current position (converted to feet) in the format required for
@@ -102,97 +98,70 @@ SetOnRow:
 ;	JPOS	LookRight
 ;	JNEG	LookLeft
 
-;LookLeft:
-;	LOAD		Mask0
-;LookRight:
-;	OR     Mask5
 
-;	OR		Mask2
-;	OR		Mask3		; enable front sensors
-;	OUT    SonarEN     ; enable side sonars
-;	LOAD	Zero  
-;	STORE  LeftFlag    ; reset some variables
-;	STORE  RightFlag
+	LOAD		Mask2
+	OR			Mask3		; enable front sensors
+	OUT    SonarEN     
+	LOAD	Zero  
+	STORE  LeftFlag    ; reset some variables
+	STORE  RightFlag
 	
-Ex1Move:
-	; Testing movement code -- probably want to see
-	; what XPOS, YPOS, and THETA are doing.
-	IN     XPOS
-	OUT    SSEG1
-	IN     YPOS
-	OUT    SSEG2
-	IN     THETA
-	CALL   FoldAngle    ; Difference from 0 probably more useful
-	CALL   Abs          ; absolute value probably more useful
-	OUT    LEDS
-	; The following code interfaces with the movement
-	; helper subroutine.  Need to provide it with desired
-	; heading and speed:
-	LOADI  0
-	STORE  DesTheta    ; desired heading (0 degrees)
-	LOAD   FMid
-	STORE  DesVel      ; desired velocity (medium forward)
-	; this subroutine must be called at least a few times
-	; per second.  It actively corrects for detectable
-	; movement errors.
-	CALL   SetMovement
+DownRowMove: 
+	; this code takes in the readings from sensor 2 and 3 and sees if the average is greater than 2ft
+	; if so speedy gonzalez is still far from the wall and continues towards the wall 
+	; he speeds up the wheel with the greater distance from the wall slightly to aim straight down the aisle
+	IN 		Dist2
+	STORE 	Temp2
+	IN		Dist3
+	STORE	Temp3
+	ADD		Temp2
+	SHIFT	-1		;add the distances and average them
+;	SUB		OneFoot
+;	JNEG	SlowToDetect
 	
-; test sonar values
-;Ex1TestLeft:
-;	LOAD   LeftFlag
-;	JPOS   Ex1TestRight ; if positive, left sonar was already tripped
-;ModTestFrontLeft:
-;	IN     Dist2
-;	ADDI   -609        ; 2ft in mm (sonar units)
-;	JPOS   Ex1TestRight ; nothing there
-;	CALL   Ex1SendCoords ; something there; send coordinates
-;	LOADI  1
-;	STORE  LeftFlag    ; record that this sensor was tripped
-;Ex1TestRight:
-;	LOAD   RightFlag
-;	JPOS   Ex1TestDist ; if positive, right sonar was already tripped
-;	IN     Dist5
-;	ADDI   -609        ; 2ft in mm (sonar units)
-;	JPOS   Ex1TestDist ; nothing there
-;	CALL   Ex1SendCoords ; something there; send coordinates
-;	LOADI  1
-;	STORE  RightFlag    ; record that this sensor was tripped
-;Ex1TestDist:
-	IN     XPOS
-	SUB    TwoFeet
-;	SUB    TwoFeet
-	SUB    TwoFeet      ; lazy two feet
-	JNEG   Ex1Move      ; not there yet; keep moving
+	LOAD	Temp3
+	SUB		Temp2
+	JPOS	CompensateRight
+	JNEG	CompensateLeft
+	JZERO	NoComp
 	
-; at this point, robot has passed 4ft
-Passed4Feet:
-;	LOAD   LeftFlag
-;	ADD    RightFlag
-	; AC now has number of sensors tripped
-;	STORE  ObjCount     ; subroutine will report this value
-;	CALL   SendObjCount ; subroutine to send object count
+CompensateRight:
+	LOAD	FMidPlus
+	OUT		RVELCMD
+	LOAD	FMid
+	OUT		LVELCMD
+	JUMP	DownRowMove	
 	
-Ex1Stop:
-	LOAD  	Zero
+CompensateLeft:
+	LOAD	FMidPlus
+	OUT		LVELCMD
+	LOAD	FMid
+	OUT		RVELCMD
+	JUMP	DownRowMove	
+
+NoComp:
+	LOAD	FMid
+	OUT		RVELCMD
+	LOAD	FMid
+	OUT		LVELCMD	
+	JUMP	DownRowMove	
+	
+
+; at this point, speedy gonzalez is 2 feet from the wall and will slow
+;down to detect objects at the sides
+	
+SlowToDetect:
+	LOAD  	FSlow
+	
 ;	OUT    SonarEN     ; turn off sonars
-	STORE  DesTheta    ; desired heading (0 degrees)
-	STORE  DesVel      ; desired velocity (stopped)
-	CALL   SetMovement
-	LOAD	StopLoopCount	
-	SUB		One
-	STORE	StopLoopCount
-	JZero	TestSensors
-	
-	JUMP   Ex1Stop     ; note that SetMovement is inside the loop
 
 TestSensors:
 
-	LOAD		Mask0
-	OR     Mask5
-
-;	OR		Mask2
-;	OR		Mask3		; enable front sensors
-	OUT    SonarEN 
+	LOAD	Mask0
+	OR      Mask5
+	OR		Mask2
+	OR		Mask3	
+	OUT    SonarEN 	;enable front and side sensors
 
 ; test sonar values
 ;Ex1TestLeft:
@@ -200,6 +169,8 @@ TestSensors:
 ;	JPOS   Ex1TestRight ; if positive, left sonar was already tripped
 
 ModTestLeft:
+	LOAD   LeftFlag
+	JPOS   ModTestRight ; if positive, left sonar was already tripped
 	LOAD	LeftDetectDist
 	SUB		LeftDigCount
 	JZero	ModTestRight
@@ -216,9 +187,11 @@ ModTestLeft:
 	STORE  LeftFlag    ; record that this sensor was tripped
 	
 ModTestRight:
+	LOAD	RightFlag
+	JPOS	SlowToDetect
 	LOAD	RightDetectDist
 	SUB		RightDigCount
-	JZero	Die
+	JZero	SlowToDetect
 	ADDI	1
 	STORE	RightDigCount
 	LOAD	RightDigDist
@@ -988,8 +961,16 @@ Deg270:   DW 270       ; 270
 Deg360:   DW 360       ; can never actually happen; for math only
 FSlow:    DW 100       ; 100 is about the lowest velocity value that will move
 RSlow:    DW -100
+FSlowPlus:    DW 110    ;slow compensation speed
+RSlowPlus:    DW -110
+FSlowMinus:    DW 90    ;slow compensation speed
+RSlowMinus:    DW -90
 FMid:     DW 350       ; 350 is a medium speed
 RMid:     DW -350
+FMidPlus:  DW 365
+RMidPlus:  DW -365		;speed for compensation 
+FMidMinus:  DW 335
+RMidMinus:  DW -335		;speed for compensation 
 FFast:    DW 500       ; 500 is almost max speed (511 is max)
 RFast:    DW -500
 
