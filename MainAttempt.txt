@@ -165,7 +165,7 @@ Next: 				;Set Cutoff distances 2 ft higher.
 	IN XPOS 	 
 	OUT LCD
 	ADDI -1524
-	JNEG OutCell
+	JNEG SonarPos
 	JPOS Finisher
 
 SonarPos:
