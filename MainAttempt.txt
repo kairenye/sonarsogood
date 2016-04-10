@@ -61,7 +61,7 @@ Main:
 	OUT    SONAREN
 	OUT    RESETPOS ;Turn on side sensors
 OutCell:			
-	LOAD FSLOW		;Set slow speed
+	LOAD FMID		;Set slow speed
 	OUT LVELCMD	      
 	OUT RVELCMD
 	LOAD Two    	 
@@ -71,7 +71,7 @@ OutCell:
     ADD LowCutoff  ;If Xpos > 427 (1.5 feet) , 3.5 , etc. Loop
     JNEG OutCell
 Inner:
-	LOAD FSLOW
+	LOAD FMID
 	OUT LVELCMD 		
 	OUT RVELCMD   		
 	IN DIST0			
@@ -86,7 +86,7 @@ Inner:
  
 	
 Outer:    
-	LOAD FSLOW
+	LOAD FMID
 	OUT LVELCMD
 	OUT RVELCMD  
 	IN DIST0
@@ -101,7 +101,7 @@ Outer:
     JUMP InnerRight
 	
 InnerRight:
-	LOAD FSLOW
+	LOAD FMID
 	OUT LVELCMD 		
 	OUT RVELCMD   		
 	IN DIST5			
@@ -117,7 +117,7 @@ InnerRight:
 
 
 OuterRight:
-	LOAD FSLOW
+	LOAD FMID
 	OUT LVELCMD
 	OUT RVELCMD  
 	IN DIST5
@@ -151,7 +151,7 @@ KeepReadingRight:		;XPos < highcutoff Read inner
 	Jump Next
 
 Next: 				;Set Cutoff distances 2 ft higher. 
-	LOAD FSLOW		;Check If too close to wall
+	LOAD FMID		;Check If too close to wall
 	OUT LVELCMD
 	OUT RVELCMD  
 	LOAD LowCutOff   ;-1.5 feet 
@@ -161,7 +161,7 @@ Next: 				;Set Cutoff distances 2 ft higher.
 	ADDI -610		  ;-4.6 feet
 	STORE HighCutOff
 	LOAD Six        
-	OUT  SSEG1
+	OUT  SSEG1    
 	IN XPOS 	 
 	OUT LCD
 	ADDI -1524
