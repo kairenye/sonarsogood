@@ -58,18 +58,25 @@ WaitForUser:
 Main: 
 	LOAD   MASK0
 	OR 	   MASK5
+	OR     MASK2
+	OR 	   MASK3 
 	OUT    SONAREN
 	OUT    RESETPOS ;Turn on side sensors
+	LOAD ZERO
+	STORE COUNT
+	LOAD COUNT
+	OUT LCD 
 OutCell:			
 	LOAD FMID		;Set slow speed
 	OUT LVELCMD	      
 	OUT RVELCMD
 	LOAD Two    	 
 	OUT  SSEG1    
-	IN	XPOS   		
-	OUT LCD
+	IN	XPOS 		
+	OUT SSEG2
     ADD LowCutoff  ;If Xpos > 427 (1.5 feet) , 3.5 , etc. Loop
     JNEG OutCell
+    JZERO Control
 	JPOS Control
 
 InnerLeft:				;First check inner left row
@@ -77,12 +84,12 @@ InnerLeft:				;First check inner left row
 	OUT LVELCMD 	; Test outer row
 	OUT RVELCMD   	;If there is, add one to count 	
 	IN DIST0		;Set OccupiedLeft to 1
-    ADDI -685	;If left dist>2.25 feet, Jump to outer
+    SUB InOutCutoff	;If left dist>2.25 feet, Jump to outer
     JPOS OuterLeft   ;Else Add one to count, there is an object in the inner row.
     LOAD Three	 ;Then Test RIght sensors
 	OUT  SSEG1
     LOAD Count
-    ADDI 1      
+    ADDI 1     
     STORE Count 
 	LOAD One
 	Store OccupiedLeft
@@ -94,7 +101,7 @@ OuterLeft:
 	OUT LVELCMD
 	OUT RVELCMD 
 	IN DIST0
-    ADDI -1217	  
+    SUB OutWallCutoff  
 	Load One
 	Store Tester
     JPOS Control  ;If Left Side is 4 feet away 
@@ -116,7 +123,7 @@ InnerRight:					;Check inner right row
 	OUT LVELCMD
 	OUT RVELCMD 
 	IN DIST5				;If no obejct, check outer Right
-    ADDI -685		  
+    SUB InOutCutoff		  
     JPOS OuterRight   		;If object, set occupied right
     LOAD Eight				;Set tester to zero
 	OUT  SSEG1				;Jump control
@@ -136,7 +143,7 @@ OuterRight:					;If no object in outer row
 	OUT LVELCMD
 	OUT RVELCMD 
 	IN DIST5				;Jump control
-    ADDI -1217 ; 			;If object, occupiexdright
+    SUB OutWallCutoff ; 			;If object, occupiexdright
     JPOS Control ;			;tester= 0
     LOAD Nine				;Jump control
 	OUT  SSEG1
@@ -159,7 +166,7 @@ Control:					;If tester = 1 check right side
 	LOAD Five				;If tester=0 check left side
 	OUT  SSEG1				;If an object is detected, only check the other side
 	IN XPOS					
-	OUT LCD			 		;if xpos>cutoff 
+	OUT SSEG2			 		;if xpos>cutoff 
 	ADD HighCutOff			;stop reading
 	JPOS NEXT
 	LOAD OccupiedLeft		;If object is in left
@@ -171,11 +178,13 @@ Control:					;If tester = 1 check right side
 	Jump InnerLeft
 
 RightControl:
+	LOAD Eight				;If tester=0 check left side
+	OUT  SSEG1
 	LOAD FMID			
 	OUT LVELCMD
 	OUT RVELCMD 
 	IN XPOS
-	OUT LCD			
+	OUT SSEG2	
 	ADD HighCutOff
 	JPOS NEXT
 	Load OccupiedRight	;If an object is in right and left, stop detecting
@@ -183,11 +192,13 @@ RightControl:
 	Jump InnerRight		;If not, read right side
 	
 LeftControl:
+	LOAD Nine				;If tester=0 check left side
+	OUT  SSEG1
 	LOAD FMID			
 	OUT LVELCMD
 	OUT RVELCMD 
 	IN XPOS
-	OUT LCD			
+	OUT SSEG2	
 	ADD HighCutOff	
 	JPOS NEXT
 	Load OccupiedLeft	;If an object is in right and left, stop detecting
@@ -209,22 +220,18 @@ Next: 				;Set Cutoff distances 2 ft higher.
 	STORE HighCutOff
 	LOAD Six        
 	OUT  SSEG1    
-	IN XPOS 	 			
-	OUT LCD				
-	ADDI -2623				
+	IN XPOS 
+	OUT SSEG2
+	SUB EDGE	 							
 	JNEG OutCell			
-	JPOS Finisher			
-	
+	JPOS Finisher
+	JZERO FINISHER			
 
-SonarPos:			
-	Load MASK2			
-	OUT SONAREN				
-	LOAD DIST2
-    ADDI -155
-	JPOS OutCell
-	JNEG FINISHER
 	
 Finisher:
+	IN XPOS
+	SUB EDGE
+	OUT SSEG2
 	LOAD Seven
 	OUT  SSEG1			
 	LOAD Zero
@@ -234,7 +241,6 @@ Finisher:
 	OUT LCD
 	JUMP Finisher
 
-	
 
 ; End example code
 ;/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
@@ -261,6 +267,9 @@ HighCutoff: DW -793
 OccupiedLeft: DW 0
 OccupiedRight: DW 0
 Tester: DW 0 
+EDGE: DW 2623
+InOutCutoff: DW 685
+OutWallCutoff: DW 1217
 ;***************************************************************
 ;* Subroutines
 ;***************************************************************
