@@ -112,6 +112,9 @@ OuterLeft:
     JUMP Control
 	
 InnerRight:					;Check inner right row
+	LOAD FMID			
+	OUT LVELCMD
+	OUT RVELCMD 
 	IN DIST5				;If no obejct, check outer Right
     ADDI -685		  
     JPOS OuterRight   		;If object, set occupied right
@@ -129,6 +132,9 @@ InnerRight:					;Check inner right row
 
 
 OuterRight:					;If no object in outer row 
+	LOAD FMID			
+	OUT LVELCMD
+	OUT RVELCMD 
 	IN DIST5				;Jump control
     ADDI -1217 ; 			;If object, occupiexdright
     JPOS Control ;			;tester= 0
@@ -147,6 +153,9 @@ OuterRight:					;If no object in outer row
 
 
 Control:					;If tester = 1 check right side
+	LOAD FMID			
+	OUT LVELCMD
+	OUT RVELCMD 
 	LOAD Five				;If tester=0 check left side
 	OUT  SSEG1				;If an object is detected, only check the other side
 	IN XPOS					
@@ -162,6 +171,9 @@ Control:					;If tester = 1 check right side
 	Jump InnerLeft
 
 RightControl:
+	LOAD FMID			
+	OUT LVELCMD
+	OUT RVELCMD 
 	IN XPOS
 	OUT LCD			
 	ADD HighCutOff
@@ -171,6 +183,9 @@ RightControl:
 	Jump InnerRight		;If not, read right side
 	
 LeftControl:
+	LOAD FMID			
+	OUT LVELCMD
+	OUT RVELCMD 
 	IN XPOS
 	OUT LCD			
 	ADD HighCutOff	
@@ -180,6 +195,9 @@ LeftControl:
 	Jump InnerLeft   	;If not, read left side
 
 Next: 				;Set Cutoff distances 2 ft higher.  
+	LOAD FMID			
+	OUT LVELCMD
+	OUT RVELCMD 
 	Load Zero
 	Store OccupiedLeft
 	Store OccupiedRight
