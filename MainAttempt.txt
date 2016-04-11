@@ -70,6 +70,8 @@ OutCell:
 	OUT LCD
     ADD LowCutoff  ;If Xpos > 427 (1.5 feet) , 3.5 , etc. Loop
     JNEG OutCell
+	JPOS Control
+
 Inner:
 	LOAD FMID
 	OUT LVELCMD 		
@@ -82,78 +84,109 @@ Inner:
     LOAD Count
     ADDI 1      
     STORE Count 
-	Jump InnerRight
+	LOAD OccupiedLeft
+	ADDI 1
+	Store OccupiedLeft
+	Jump Control
  
 	
 Outer:    
 	LOAD FMID
 	OUT LVELCMD
-	OUT RVELCMD  
+	OUT RVELCMD 
+	Load OccupiedLeft 
 	IN DIST0
     ADDI -1217
-    JPOS KeepReading
-    LOAD Four
-	OUT  SSEG1
+    JPOS Control  ;If Right Side is 4 feet away 
+    LOAD Four			
+	OUT  SSEG1		     ;If not 
     LOAD Count
     ADDI 1
     STORE Count
     OUT LCD
-    JUMP InnerRight
+	Load OccupiedLeft
+	ADDI 1 
+	Store OccupiedLeft
+	Load Tester 
+	Addi 1
+	Store Tester
+    JUMP Control
 	
 InnerRight:
-	LOAD FMID
-	OUT LVELCMD 		
-	OUT RVELCMD   		
+	
 	IN DIST5			
     ADDI -685		  ;If left dist>2.25 feet, Jump to outer
-    JPOS OuterRight   ;Else Add one to count, there is an object in the inner row.
-    LOAD Three			
+    JPOS OuterRIght   ;Else Add one to count, there is an object in the inner row.
+    LOAD Eight			
 	OUT  SSEG1
     LOAD Count
     ADDI 1      
     STORE Count 
-    JUMP Next
+	LOAD OccupiedRight
+	ADDI 1
+	Store OccupiedRight
+    JUMP Control
 
 
 
 OuterRight:
-	LOAD FMID
-	OUT LVELCMD
-	OUT RVELCMD  
+
 	IN DIST5
     ADDI -1217 ; 4 feet 
-    JPOS KeepReadingRight ;If right side is 4 feet away
-    LOAD Four
+    JPOS Control ;If right side is 4 feet away
+    LOAD Nine
 	OUT  SSEG1
     LOAD Count
     ADDI 1
     STORE Count
     OUT LCD
+	LOAD OccupiedRight
+	ADDI 1
+	Store OccupiedRight
+	Load Tester 
+	Addi -1
+	Store Tester
     JUMP Next
 
 
-KeepReading:		;XPos < highcutoff Read inner
+Control:		;XPos < highcutoff Read inner
 	LOAD Five
 	OUT  SSEG1
 	IN XPOS
 	OUT LCD			
 	ADD HighCutOff
-	JNEG Inner
-	Jump Next
+	JPOS NEXT
+	LOAD OccupiedLeft
+	JPOS RightControl
+	LOAD OccupiedRight
+	JPOS LeftControl
+	Load Tester 
+	Jpos InnerRight
+	Jump Inner
 
-KeepReadingRight:		;XPos < highcutoff Read inner
-	LOAD Five
-	OUT  SSEG1
+RightControl:
 	IN XPOS
 	OUT LCD			
 	ADD HighCutOff
-	JNEG InnerRight
-	Jump Next
+	JPOS NEXT
+	Load OccupiedRight
+	JPOS Next
+	Jump InnerRight
+	
+LeftControl:
+	IN XPOS
+	OUT LCD			
+	ADD HighCutOff
+	JPOS NEXT
+	Load OccupiedLeft
+	JPOS Next
+	Jump InnerRight
 
-Next: 				;Set Cutoff distances 2 ft higher. 
-	LOAD FMID		;Check If too close to wall
-	OUT LVELCMD
-	OUT RVELCMD  
+Next: 				;Set Cutoff distances 2 ft higher.  
+	Load OccupiedLeft
+	Store Zero
+	Load OccupiedRight
+	Store Zero
 	LOAD LowCutOff   ;-1.5 feet 
 	ADDI -610 ; - 2 feet
 	STORE LowCutOff  ; -3.5 feet
@@ -164,9 +197,10 @@ Next: 				;Set Cutoff distances 2 ft higher.
 	OUT  SSEG1    
 	IN XPOS 	 
 	OUT LCD
-	ADDI -1524
-	JNEG SonarPos
+	ADDI -2623
+	JNEG OutCell
 	JPOS Finisher
+	
 
 SonarPos:
 	Load MASK2
@@ -177,7 +211,6 @@ SonarPos:
 	JNEG FINISHER
 	
 Finisher:
-	JNEG OutCell
 	LOAD Seven
 	OUT  SSEG1
 	LOAD Zero
@@ -185,6 +218,7 @@ Finisher:
 	OUT RVELCMD
 	LOAD Count
 	OUT LCD
+	JUMP Finisher
 
 	
 
@@ -210,7 +244,9 @@ Forever:
 Count:    DW 0 
 LowCutoff: DW -427
 HighCutoff: DW -793
-
+OccupiedLeft: DW 0
+OccupiedRight: DW 0
+Tester: DW 0 
 ;***************************************************************
 ;* Subroutines
 ;***************************************************************
