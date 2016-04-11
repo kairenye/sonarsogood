@@ -72,11 +72,11 @@ OutCell:
     JNEG OutCell
 	JPOS Control
 
-Inner:
-	LOAD FMID
-	OUT LVELCMD 		
-	OUT RVELCMD   		
-	IN DIST0			
+Inner:				;First check inner left row
+	LOAD FMID		;If there is not an object in the inner row
+	OUT LVELCMD 	; Test outer row
+	OUT RVELCMD   	;If there is, add one to count 	
+	IN DIST0		;Set OccupiedLeft to 1
     ADDI -685	;If left dist>2.25 feet, Jump to outer
     JPOS Outer   ;Else Add one to count, there is an object in the inner row.
     LOAD Three	 ;Then Test RIght sensors
@@ -84,22 +84,22 @@ Inner:
     LOAD Count
     ADDI 1      
     STORE Count 
-	LOAD OccupiedLeft
-	ADDI 1
+	LOAD One
 	Store OccupiedLeft
 	Jump Control
  
 	
 Outer:    
-	LOAD FMID
+	LOAD FMID			;Check outer 
 	OUT LVELCMD
 	OUT RVELCMD 
-	Load OccupiedLeft 
 	IN DIST0
-    ADDI -1217
-    JPOS Control  ;If Right Side is 4 feet away 
-    LOAD Four			
-	OUT  SSEG1		     ;If not 
+    ADDI -1217	  
+	Load One
+	Store Tester
+    JPOS Control  ;If Left Side is 4 feet away 
+    LOAD Four	  ;Go to control
+	OUT  SSEG1	  ;If not, add one to count
     LOAD Count
     ADDI 1
     STORE Count
@@ -107,24 +107,24 @@ Outer:
 	Load OccupiedLeft
 	ADDI 1 
 	Store OccupiedLeft
-	Load Tester 
-	Addi 1
+	Load 1 
 	Store Tester
     JUMP Control
 	
 InnerRight:
 	
 	IN DIST5			
-    ADDI -685		  ;If left dist>2.25 feet, Jump to outer
-    JPOS OuterRIght   ;Else Add one to count, there is an object in the inner row.
+    ADDI -685		  
+    JPOS OuterRIght   
     LOAD Eight			
 	OUT  SSEG1
     LOAD Count
     ADDI 1      
     STORE Count 
-	LOAD OccupiedRight
-	ADDI 1
+	LOAD One
 	Store OccupiedRight
+	Load Zero
+	Store Tester
     JUMP Control
 
 
@@ -143,23 +143,22 @@ OuterRight:
 	LOAD OccupiedRight
 	ADDI 1
 	Store OccupiedRight
-	Load Tester 
-	Addi -1
+	Load Zero
 	Store Tester
     JUMP Next
 
 
-Control:		;XPos < highcutoff Read inner
-	LOAD Five
+Control:		
+	LOAD Five			
 	OUT  SSEG1
 	IN XPOS
-	OUT LCD			
-	ADD HighCutOff
+	OUT LCD			 		;if xpos>cutoff 
+	ADD HighCutOff			;stop reading
 	JPOS NEXT
-	LOAD OccupiedLeft
-	JPOS RightControl
-	LOAD OccupiedRight
-	JPOS LeftControl
+	LOAD OccupiedLeft		;If object is in left
+	JPOS RightControl		;Only check right
+	LOAD OccupiedRight		;If object is in the right
+	JPOS LeftControl		;Only toggle left
 	Load Tester 
 	Jpos InnerRight
 	Jump Inner
@@ -169,24 +168,23 @@ RightControl:
 	OUT LCD			
 	ADD HighCutOff
 	JPOS NEXT
-	Load OccupiedRight
+	Load OccupiedRight	;If an object is in right and left, stop detecting
 	JPOS Next
-	Jump InnerRight
+	Jump InnerRight		;If not, read right side
 	
 LeftControl:
 	IN XPOS
 	OUT LCD			
-	ADD HighCutOff
+	ADD HighCutOff	
 	JPOS NEXT
-	Load OccupiedLeft
+	Load OccupiedLeft	;If an object is in right and left, stop detecting
 	JPOS Next
-	Jump InnerRight
+	Jump Inner		;If not, read left side
 
 Next: 				;Set Cutoff distances 2 ft higher.  
-	Load OccupiedLeft
-	Store Zero
-	Load OccupiedRight
-	Store Zero
+	Load Zero
+	Store OccupiedLeft
+	Store OccupiedRight
 	LOAD LowCutOff   ;-1.5 feet 
 	ADDI -610 ; - 2 feet
 	STORE LowCutOff  ; -3.5 feet
